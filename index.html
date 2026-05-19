@@ -18,5 +18,31 @@
         <p>สวัสดีคุณ: <strong id="user-name"></strong></p>
         <p>LINE User ID ของคุณคือ: <br><code id="user-id" style="background: #e2e8f0; padding: 5px 10px; border-radius: 4px;"></code></p>
     </div>
+    <script>
+        const myLiffId = 'https://miniapp.line.me/2010128261-kYvBcg1E';
+
+        // เริ่มต้นสั่งให้ระบบ LIFF ของ LINE ทำงาน
+        liff.init({ liffId: myLiffId })
+            .then(() => {
+                // เช็กว่าผู้ใช้ล็อกอินในระบบ LINE หรือยัง
+                if (!liff.isLoggedIn()) {
+                    liff.login(); // ถ้ายังไม่ล็อกอิน ให้หน้าเว็บบังคับล็อกอินผ่าน LINE ทันที
+                } else {
+                    // ถ้าล็อกอินแล้ว ให้ดึงข้อมูลโปรไฟล์มาแสดงผล
+                    liff.getProfile().then(profile => {
+                        document.getElementById('loading').style.display = 'none';
+                        document.getElementById('profile-zone').style.display = 'block';
+                        
+                        document.getElementById('user-picture').src = profile.pictureUrl;
+                        document.getElementById('user-name').innerText = profile.displayName;
+                        document.getElementById('user-id').innerText = profile.userId;
+                    });
+                }
+            })
+            .catch((err) => {
+                console.error('ระบบ LIFF ทำงานผิดพลาด:', err);
+                document.getElementById('loading').innerText = 'เกิดข้อผิดพลาดในการเชื่อมต่อกับ LINE';
+            });
+    </script>
 </body>
 </html>
