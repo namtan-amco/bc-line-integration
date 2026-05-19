@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BC Approval Mini App</title>
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+</head>
+<body id="body" style="font-family: Arial, sans-serif; text-align: center; padding-top: 50px; background-color: #f1f5f9;">
+
+    <h2>BC Approval LINE Mini App</h2>
+    <hr style="width: 50%; border: 1px solid #cbd5e1;">
+    
+    <p id="loading" style="color: #64748b;">กำลังโหลดระบบสมาชิก LINE...</p>
+
+    <div id="profile-zone" style="display: none; margin-top: 20px;">
+        <img id="user-picture" width="100" style="border-radius: 50%; border: 3px solid #3b82f6;"><br><br>
+        <p>สวัสดีคุณ: <strong id="user-name"></strong></p>
+        <p>LINE User ID ของคุณคือ: <br><code id="user-id" style="background: #e2e8f0; padding: 5px 10px; border-radius: 4px;"></code></p>
+    </div>
+
+    <script src="index.js"></script>
+</body>
+</html>

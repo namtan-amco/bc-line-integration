@@ -4,19 +4,65 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BC Approval Mini App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 </head>
-<body id="body" style="font-family: Arial, sans-serif; text-align: center; padding-top: 50px; background-color: #f1f5f9;">
+<body id="body" class="bg-slate-100 font-sans min-h-screen text-slate-800">
 
-    <h2>BC Approval LINE Mini App</h2>
-    <hr style="width: 50%; border: 1px solid #cbd5e1;">
-    
-    <p id="loading" style="color: #64748b;">กำลังโหลดระบบสมาชิก LINE...</p>
+    <div class="bg-white shadow-sm p-4 flex items-center justify-between border-b border-slate-200">
+        <div class="flex items-center space-x-3">
+            <img id="user-picture" class="w-10 h-10 rounded-full border-2 border-blue-500" src="https://via.placeholder.com/150" alt="Profile">
+            <div>
+                <p class="text-xs text-slate-500">ผู้อนุมัติ</p>
+                <p id="user-name" class="text-sm font-semibold text-slate-700">กำลังโหลด...</p>
+            </div>
+        </div>
+        <span class="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded">Business Central</span>
+    </div>
 
-    <div id="profile-zone" style="display: none; margin-top: 20px;">
-        <img id="user-picture" width="100" style="border-radius: 50%; border: 3px solid #3b82f6;"><br><br>
-        <p>สวัสดีคุณ: <strong id="user-name"></strong></p>
-        <p>LINE User ID ของคุณคือ: <br><code id="user-id" style="background: #e2e8f0; padding: 5px 10px; border-radius: 4px;"></code></p>
+    <div class="p-4 max-w-md mx-auto space-y-4">
+        
+        <div id="loading-status" class="text-center py-8 text-slate-500">
+            <p class="animate-pulse">กำลังดึงข้อมูลเอกสารจาก Business Central...</p>
+        </div>
+
+        <div id="main-content" class="hidden space-y-4">
+            
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 space-y-2">
+                <div class="flex justify-between items-center">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Sales Quote</span>
+                    <span id="doc-no" class="text-sm font-mono font-bold text-blue-600">SQ-XXXXX</span>
+                </div>
+                <h3 id="cust-name" class="text-lg font-bold text-slate-800">ชื่อลูกค้า (Loading...)</h3>
+                <div class="grid grid-cols-2 gap-2 pt-2 text-sm border-t border-slate-100 text-slate-600">
+                    <div>วันที่: <span id="doc-date" class="font-medium">-</span></div>
+                    <div class="text-right">ยอดรวม: <span id="doc-amount" class="font-bold text-emerald-600">0.00</span></div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="bg-slate-50 px-4 py-2 border-b border-slate-200">
+                    <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">รายการสินค้า</span>
+                </div>
+                <div id="sales-lines-list" class="divide-y divide-slate-100 max-h-60 overflow-y-auto">
+                    </div>
+            </div>
+
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 space-y-2">
+                <label for="approve-comment" class="text-xs font-bold text-slate-500 uppercase tracking-wider">ความคิดเห็นเพิ่มเติม (ถ้ามี)</label>
+                <textarea id="approve-comment" rows="3" class="w-full p-2.5 text-sm text-slate-900 bg-slate-50 rounded-lg border border-slate-300 focus:ring-blue-500 focus:border-blue-500" placeholder="พิมพ์เหตุผลการอนุมัติหรือปฏิเสธตรงนี้..."></textarea>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 pt-2">
+                <button id="btn-reject" onclick="handleAction('REJECT')" class="w-full bg-rose-500 hover:bg-rose-600 text-white font-bold py-3 px-4 rounded-xl shadow-md active:scale-95 transition text-center">
+                    ปฏิเสธ (Reject)
+                </button>
+                <button id="btn-approve" onclick="handleAction('APPROVE')" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-4 rounded-xl shadow-md active:scale-95 transition text-center">
+                    อนุมัติ (Approve)
+                </button>
+            </div>
+
+        </div>
     </div>
 
     <script src="index.js"></script>
