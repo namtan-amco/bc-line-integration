@@ -1,13 +1,15 @@
 
 const myLiffId = "2010128261-kYvBcg1E";
 
-const body = document.querySelector("#body");
+const urlFetchSalesLines = "https://default62c465b8d4a74552b7e2ab054bb358.6d.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/7765aba9cc08433fad8382175f70e03e/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=wAQfzYs9QURYawYqJGCXw1C3nRmP1RRxk6OrWQ2dTOY";
+const urlSubmitApproval = "https://default62c465b8d4a74552b7e2ab054bb358.6d.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/15c4c982bb9143aca0bf8735cd307965/triggers/manual/paths/invoke?api-version=1";
 
 // ตัวแปรเก็บค่าสำคัญที่ดักมาจากลิงก์แชท LINE
 let currentApprovalEntrySystemId = "";
 let currentDocumentNo = "";
 let currentCustomerName = "";
 let currentAmount = "";
+let currentDocDate = "";
 
 async function main() {
     try {
@@ -24,16 +26,19 @@ async function main() {
         document.getElementById('user-name').innerText = profile.displayName;
         document.getElementById('user-picture').src = profile.pictureUrl;
 
-        // แกะค่าจาก URL (ที่ส่งมาจาก Power Automate ในอนาคต)
-        // ตัวอย่างลิงก์: https://liff.line.me/xxx?documentNo=SQ-26001&systemId=guid-xxxx
         const urlParams = new URLSearchParams(window.location.search);
-        currentDocumentNo = urlParams.get('documentNo') || "ไม่พบเลขที่เอกสาร"; // Mockup data
+        currentDocumentNo = urlParams.get('documentNo');
         currentCustomerName = urlParams.get('customerName') || "ไม่พบชื่อลูกค้า";
         currentApprovalEntrySystemId = urlParams.get('systemId') || "Not Found System ID";
-        currentAmount = urlParams.get('amount') || "ไม่พบจำนวนเงิน";
+        currentAmount = urlParams.get('amount') || "0.00";
+        currentDocDate = urlParams.get('docDate') || "-";
 
+        if (!currentDocumentNo || !currentApprovalEntrySystemId) {
+            document.getElementById('loading-status').innerHTML = "❌ ไม่พบข้อมูลเอกสาร <br><span class='text-xs text-red-400'>กรุณาเปิดลิงก์นี้จากห้องแชทแจ้งเตือนของ LINE</span>";
+            return;
+        }
         // สั่งให้แสดงข้อมูลการอนุมัติ
-        loadMockData(currentDocumentNo, currentCustomerName, currentAmount);
+        await loadData(currentDocumentNo, currentCustomerName, currentAmount, currentDocDate);
 
     } catch (err) {
         console.error('LIFF Init Error:', err);
@@ -42,42 +47,62 @@ async function main() {
 }
 
 // Function to load mock data for demonstration purposes
-function loadMockData(docNo, customerName, amount) {
-    // แสดงข้อมูล Header
-    document.getElementById('doc-no').innerText = docNo;
-    document.getElementById('cust-name').innerText = customerName;
-    document.getElementById('doc-date').innerText = "19/05/2026";
-    document.getElementById('doc-amount').innerText = amount + " THB";
+async function loadData(docNo, customerName, amount, docDate) {
 
-    // จำลองข้อมูลรายการสินค้า (Sales Lines)
-    const mockSalesLines = [
-        { itemNo: "1000", desc: "Bicycle (จักรยานเสือภูเขา)", qty: 2, uom: "PCS", price: 15000, amount: 30000 },
-        { itemNo: "1120", desc: "Front Wheel (ล้อจักรยานด้านหน้า)", qty: 2, uom: "PCS", price: 2500, amount: 5000 },
-        { itemNo: "GL-05", desc: "Shipping Fee (ค่าจัดส่งสินค้า)", qty: 1, uom: "BOX", price: 500, amount: 500 }
-    ];
+    try {
+        const response = await fetch(urlFetchSalesLines, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                documentNo: docNo,
+                documentType: "Quote"
+            })
+        });
 
-    // นำรายการสินค้าไปพ่นลงใน HTML
-    const linesContainer = document.getElementById('sales-lines-list');
-    linesContainer.innerHTML = ""; // ล้างค่าเก่า
+        if (!response.ok) throw new Error('Network response was not ok');
 
-    mockSalesLines.forEach(line => {
-        const lineHtml = `
-            <div class="p-4 flex justify-between items-start text-sm">
-                <div class="space-y-1">
-                    <p class="font-bold text-slate-800">${line.desc}</p>
-                    <p class="text-xs text-slate-400">รหัส: ${line.itemNo} | จำนวน: ${line.qty} ${line.uom} x ฿${line.price.toLocaleString()}</p>
-                </div>
-                <div class="text-right font-semibold text-slate-700">
-                    ฿${line.amount.toLocaleString()}
-                </div>
-            </div>
-        `;
-        linesContainer.insertAdjacentHTML('beforeend', lineHtml);
-    });
+        const salesLines = await response.json(); // Send the actual sales lines data from Power Automate
 
-    // สลับหน้ากาก: ซ่อนคำว่า Loading แล้วเปิดแสดงเนื้อหาจริง
-    document.getElementById('loading-status').classList.add('hidden');
-    document.getElementById('main-content').classList.remove('hidden');
+        document.getElementById('doc-no').innerText = docNo;
+        document.getElementById('cust-name').innerText = customerName;
+        document.getElementById('doc-date').innerText = docDate;
+        document.getElementById('doc-amount').innerText = amount + " THB";
+
+        // คำนวณยอดรวมสุทธิ (Net Amount) จากรายการสินค้าจริงที่ดึงมา
+        let totalAmount = 0;
+
+        const linesContainer = document.getElementById('sales-lines-list');
+        linesContainer.innerHTML = "";
+
+        if (salesLines && salesLines.length > 0) {
+            salesLines.forEach(line => {
+                const lineAmount = Number(line.lineAmount) || 0;
+
+                const lineHtml = `
+                    <div class="p-4 flex justify-between items-start text-sm">
+                        <div class="space-y-1">
+                            <p class="font-bold text-slate-800">${line.description || 'ไม่มีรายละเอียด'}</p>
+                            <p class="text-xs text-slate-400">รหัส: ${line.no || '-'} | จำนวน: ${line.quantity || 0} ${line.unitOfMeasure || ''} x ฿${(Number(line.unitPrice) || 0).toLocaleString()}</p>
+                        </div>
+                        <div class="text-right font-semibold text-slate-700">
+                            ฿${lineAmount.toLocaleString()}
+                        </div>
+                    </div>
+                `;
+                linesContainer.insertAdjacentHTML('beforeend', lineHtml);
+            });
+        } else {
+            linesContainer.innerHTML = "<p class='p-4 text-center text-sm text-slate-400'>ไม่พบรายการสินค้าในเอกสารใบนี้</p>";
+        }
+
+        // สลับหน้ากาก: ซ่อนสถานะโหลด แล้วโชว์ข้อมูลจริง
+        document.getElementById('loading-status').classList.add('hidden');
+        document.getElementById('main-content').classList.remove('hidden');
+        
+    } catch (error) {
+        console.error('Error fetching sales lines:', error);
+        document.getElementById('loading-status').innerText = "❌ ไม่สามารถดึงข้อมูลสินค้าจาก Business Central ได้";
+    }
 }
 
 // Function to handle Approve/Reject button clicks
@@ -88,9 +113,40 @@ function handleAction(actionType) {
     const confirmText = actionType === 'APPROVE' ? 'ยืนยันการ "อนุมัติ" ใช่หรือไม่?' : 'ยืนยันการ "ปฏิเสธ" ใช่หรือไม่?';
     if (!confirm(confirmText)) return;
 
-    alert(`[ทดสอบระบบ] คุณกดปุ่ม: ${actionType}\nความคิดเห็น: ${commentValue || "-"}\nID อ้างอิง: ${currentApprovalEntrySystemId}`);
-    
-    // เขียนโค้ดตรงนี้ให้ยิงข้อมูลเข้า Power Automate จริงๆ
+    // แสดงสถานะกำลังบันทึก (ปิดปุ่มชั่วคราวกันกดซ้ำ)
+    document.getElementById('btn-approve').disabled = true;
+    document.getElementById('btn-reject').disabled = true;
+    document.getElementById('btn-approve').innerText = "กำลังบันทึก...";
+
+    try {
+        // Submit the approval decision to Power Automate
+        const response = await fetch(urlSubmitApproval, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                systemId: currentApprovalEntrySystemId,
+                action: actionType,
+                comment: commentValue
+            })
+        });
+
+        if (response.ok) {
+            alert(`ดำเนินการเสร็จสิ้น: ระบบทำการ ${actionType === 'APPROVE' ? 'อนุมัติ' : 'ปฏิเสธ'} เรียบร้อยแล้ว`);
+            liff.closeWindow(); // ปิดหน้าจอ Mini App บน LINE ทันทีเมื่อเสร็จงาน
+        } else {
+            alert("เกิดข้อผิดพลาดจากระบบหลังบ้าน ไม่สามารถบันทึกสถานะได้");
+            document.getElementById('btn-approve').disabled = false;
+            document.getElementById('btn-reject').disabled = false;
+            document.getElementById('btn-approve').innerText = "อนุมัติ (Approve)";
+        }
+
+    } catch (error) {
+        console.error('Submit Error:', error);
+        alert("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาลองใหม่อีกครั้ง");
+        document.getElementById('btn-approve').disabled = false;
+        document.getElementById('btn-reject').disabled = false;
+        document.getElementById('btn-approve').innerText = "อนุมัติ (Approve)";
+    }
 }
 
 main();
