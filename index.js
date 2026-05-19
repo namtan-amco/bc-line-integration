@@ -76,16 +76,16 @@ async function loadData(docNo, customerName, amount, docDate) {
 
         if (salesLines && salesLines.length > 0) {
             salesLines.forEach(line => {
-                const LineAmount = Number(line.LineAmount) || 0;
+                const lineAmount = Number(line.LineAmount) || 0;
 
                 const lineHtml = `
-                    <div class="p-4 flex justify-between items-start text-sm">
+                    <div class="p-4 flex justify-between items-start text-sm border-b border-slate-100">
                         <div class="space-y-1">
                             <p class="font-bold text-slate-800">${line.Description || 'ไม่มีรายละเอียด'}</p>
                             <p class="text-xs text-slate-400">รหัส: ${line.No || '-'} | จำนวน: ${line.Quantity || 0} ${line.UnitOfMeasure || ''} x ฿${(Number(line.UnitPrice) || 0).toLocaleString()}</p>
                         </div>
                         <div class="text-right font-semibold text-slate-700">
-                            ฿${LineAmount.toLocaleString()}
+                            ฿${lineAmount.toLocaleString()}
                         </div>
                     </div>
                 `;
