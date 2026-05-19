@@ -106,7 +106,7 @@ async function loadData(docNo, customerName, amount, docDate) {
 }
 
 // Function to handle Approve/Reject button clicks
-function handleAction(actionType) {
+async function handleAction(actionType) {
     const commentValue = document.getElementById('approve-comment').value;
 
     // คอนเฟิร์มกับผู้ใช้งานอีกครั้งเพื่อป้องกันการกดพลาด
