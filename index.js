@@ -6,6 +6,8 @@ const body = document.querySelector("#body");
 // ตัวแปรเก็บค่าสำคัญที่ดักมาจากลิงก์แชท LINE
 let currentApprovalEntrySystemId = "";
 let currentDocumentNo = "";
+let currentCustomerName = "";
+let currentAmount = "";
 
 async function main() {
     try {
@@ -25,11 +27,13 @@ async function main() {
         // แกะค่าจาก URL (ที่ส่งมาจาก Power Automate ในอนาคต)
         // ตัวอย่างลิงก์: https://liff.line.me/xxx?documentNo=SQ-26001&systemId=guid-xxxx
         const urlParams = new URLSearchParams(window.location.search);
-        currentDocumentNo = urlParams.get('documentNo') || "SQ-26001"; // Mockup data
-        currentApprovalEntrySystemId = urlParams.get('systemId') || "mock-system-id";
+        currentDocumentNo = urlParams.get('documentNo') || "ไม่พบเลขที่เอกสาร"; // Mockup data
+        currentCustomerName = urlParams.get('customerName') || "ไม่พบชื่อลูกค้า";
+        currentApprovalEntrySystemId = urlParams.get('systemId') || "Not Found System ID";
+        currentAmount = urlParams.get('amount') || "ไม่พบจำนวนเงิน";
 
-        // สั่งให้แสดงข้อมูลการอนุมัติ (ตอนนี้ใช้ข้อมูลจำลองก่อน)
-        loadMockData(currentDocumentNo);
+        // สั่งให้แสดงข้อมูลการอนุมัติ
+        loadMockData(currentDocumentNo, currentCustomerName, currentAmount);
 
     } catch (err) {
         console.error('LIFF Init Error:', err);
@@ -38,12 +42,12 @@ async function main() {
 }
 
 // Function to load mock data for demonstration purposes
-function loadMockData(docNo) {
+function loadMockData(docNo, customerName, amount) {
     // แสดงข้อมูล Header
     document.getElementById('doc-no').innerText = docNo;
-    document.getElementById('cust-name').innerText = "บริษัท อาม่า คอร์ปอเรชัน จำกัด";
+    document.getElementById('cust-name').innerText = customerName;
     document.getElementById('doc-date').innerText = "19/05/2026";
-    document.getElementById('doc-amount').innerText = "35,500.00 THB";
+    document.getElementById('doc-amount').innerText = amount + " THB";
 
     // จำลองข้อมูลรายการสินค้า (Sales Lines)
     const mockSalesLines = [
