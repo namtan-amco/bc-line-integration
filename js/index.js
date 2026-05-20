@@ -1,9 +1,3 @@
-
-const myLiffId = "2010128261-kYvBcg1E";
-
-const urlFetchSalesLines = "https://default62c465b8d4a74552b7e2ab054bb358.6d.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/7765aba9cc08433fad8382175f70e03e/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=wAQfzYs9QURYawYqJGCXw1C3nRmP1RRxk6OrWQ2dTOY";
-const urlSubmitApproval = "https://default62c465b8d4a74552b7e2ab054bb358.6d.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/15c4c982bb9143aca0bf8735cd307965/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=jpVZcxz_6RHycwfw_2HzC49UCYRZiIBtsfiFonKpw1g";
-                           
 // ตัวแปรเก็บค่าสำคัญที่ดักมาจากลิงก์แชท LINE
 let currentApprovalEntrySystemId = "";
 let currentDocumentNo = "";
@@ -11,9 +5,10 @@ let currentCustomerName = "";
 let currentAmount = "";
 let currentDocDate = "";
 
+// Function to initialize Line mini app and load data when the page is ready
 async function main() {
     try {
-        await liff.init({ liffId: myLiffId });
+        await liff.init({ liffId: CONFIG.myLiffId });
 
         // Check if the user is logged in, if not, trigger the login process
         if (!liff.isLoggedIn()) {
@@ -26,10 +21,11 @@ async function main() {
         document.getElementById('user-name').innerText = profile.displayName;
         document.getElementById('user-picture').src = profile.pictureUrl;
 
+        // Get query parameters from the URL (passed from the LINE chat link)
         const urlParams = new URLSearchParams(window.location.search);
         currentDocumentNo = urlParams.get('documentNo');
         currentCustomerName = urlParams.get('customerName') || "ไม่พบชื่อลูกค้า";
-        currentApprovalEntrySystemId = urlParams.get('systemId') || "Not Found System ID";
+        currentApprovalEntrySystemId = urlParams.get('systemId');
         currentAmount = urlParams.get('amount') || "0.00";
         currentDocDate = urlParams.get('docDate') || "-";
 
@@ -37,7 +33,7 @@ async function main() {
             document.getElementById('loading-status').innerHTML = "❌ ไม่พบข้อมูลเอกสาร <br><span class='text-xs text-red-400'>กรุณาเปิดลิงก์นี้จากห้องแชทแจ้งเตือนของ LINE</span>";
             return;
         }
-        // สั่งให้แสดงข้อมูลการอนุมัติ
+        // Call function to load data from Power Automate and display it on the page
         await loadData(currentDocumentNo, currentCustomerName, currentAmount, currentDocDate);
 
     } catch (err) {
@@ -46,11 +42,11 @@ async function main() {
     }
 }
 
-// Function to load mock data for demonstration purposes
+// Function to load data from Power Automate and display it on the page
 async function loadData(docNo, customerName, amount, docDate) {
 
     try {
-        const response = await fetch(urlFetchSalesLines, {
+        const response = await fetch(CONFIG.urlFetchSalesLines, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -61,15 +57,13 @@ async function loadData(docNo, customerName, amount, docDate) {
 
         if (!response.ok) throw new Error('Network response was not ok');
 
-        const salesLines = await response.json(); // Send the actual sales lines data from Power Automate
+        // Send the actual sales lines data from Power Automate to the frontend and display it
+        const salesLines = await response.json(); 
 
         document.getElementById('doc-no').innerText = docNo;
         document.getElementById('cust-name').innerText = customerName;
         document.getElementById('doc-date').innerText = docDate;
         document.getElementById('doc-amount').innerText = amount + " THB";
-
-        // คำนวณยอดรวมสุทธิ (Net Amount) จากรายการสินค้าจริงที่ดึงมา
-        let totalAmount = 0;
 
         const linesContainer = document.getElementById('sales-lines-list');
         linesContainer.innerHTML = "";
@@ -95,7 +89,7 @@ async function loadData(docNo, customerName, amount, docDate) {
             linesContainer.innerHTML = "<p class='p-4 text-center text-sm text-slate-400'>ไม่พบรายการสินค้าในเอกสารใบนี้</p>";
         }
 
-        // สลับหน้ากาก: ซ่อนสถานะโหลด แล้วโชว์ข้อมูลจริง
+        // Hide loading status and show main content
         document.getElementById('loading-status').classList.add('hidden');
         document.getElementById('main-content').classList.remove('hidden');
         
@@ -109,18 +103,18 @@ async function loadData(docNo, customerName, amount, docDate) {
 async function handleAction(actionType) {
     const commentValue = document.getElementById('approve-comment').value;
 
-    // คอนเฟิร์มกับผู้ใช้งานอีกครั้งเพื่อป้องกันการกดพลาด
+    // Show a confirmation dialog before proceeding with the action
     const confirmText = actionType === 'APPROVE' ? 'ยืนยันการ "อนุมัติ" ใช่หรือไม่?' : 'ยืนยันการ "ปฏิเสธ" ใช่หรือไม่?';
     if (!confirm(confirmText)) return;
 
-    // แสดงสถานะกำลังบันทึก (ปิดปุ่มชั่วคราวกันกดซ้ำ)
+    // Disable buttons and show loading state while processing the approval/rejection
     document.getElementById('btn-approve').disabled = true;
     document.getElementById('btn-reject').disabled = true;
     document.getElementById('btn-approve').innerText = "กำลังบันทึก...";
 
     try {
         // Submit the approval decision to Power Automate
-        const response = await fetch(urlSubmitApproval, {
+        const response = await fetch(CONFIG.urlSubmitApproval, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -132,10 +126,9 @@ async function handleAction(actionType) {
 
         if (response.ok) {
             alert(`ดำเนินการเสร็จสิ้น: ระบบทำการ ${actionType === 'APPROVE' ? 'อนุมัติ' : 'ปฏิเสธ'} เรียบร้อยแล้ว`);
-            liff.closeWindow(); // ปิดหน้าจอ Mini App บน LINE ทันทีเมื่อเสร็จงาน
+            liff.closeWindow(); // Close the Line mini app after successful submission
         } else {
-            alert(`เกิดข้อผิดพลาดจากระบบหลังบ้าน (Status: ${response.status} - ${response.statusText})`);
-            // alert("เกิดข้อผิดพลาดจากระบบหลังบ้าน ไม่สามารถบันทึกสถานะได้");
+            alert(`เกิดข้อผิดพลาด (Status: ${response.status} - ${response.statusText}) ไม่สามารถบันทึกสถานะได้`);
             document.getElementById('btn-approve').disabled = false;
             document.getElementById('btn-reject').disabled = false;
             document.getElementById('btn-approve').innerText = "อนุมัติ (Approve)";
