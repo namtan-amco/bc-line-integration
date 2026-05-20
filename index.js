@@ -134,7 +134,8 @@ async function handleAction(actionType) {
             alert(`ดำเนินการเสร็จสิ้น: ระบบทำการ ${actionType === 'APPROVE' ? 'อนุมัติ' : 'ปฏิเสธ'} เรียบร้อยแล้ว`);
             liff.closeWindow(); // ปิดหน้าจอ Mini App บน LINE ทันทีเมื่อเสร็จงาน
         } else {
-            alert("เกิดข้อผิดพลาดจากระบบหลังบ้าน ไม่สามารถบันทึกสถานะได้");
+            alert(`เกิดข้อผิดพลาดจากระบบหลังบ้าน (Status: ${response.status} - ${response.statusText})`);
+            // alert("เกิดข้อผิดพลาดจากระบบหลังบ้าน ไม่สามารถบันทึกสถานะได้");
             document.getElementById('btn-approve').disabled = false;
             document.getElementById('btn-reject').disabled = false;
             document.getElementById('btn-approve').innerText = "อนุมัติ (Approve)";
