@@ -1,4 +1,3 @@
-// ตัวแปรเก็บค่าสำคัญที่ดักมาจากลิงก์แชท LINE
 let currentApprovalEntrySystemId = "";
 let currentDocumentNo = "";
 let currentCustomerName = "";
@@ -8,7 +7,7 @@ let currentDocDate = "";
 // Function to initialize Line mini app and load data when the page is ready
 async function main() {
     try {
-        await liff.init({ liffId: CONFIG.liffId });
+        await liff.init({ liffId: CONFIG.myLiffId });
 
         // Check if the user is logged in, if not, trigger the login process
         if (!liff.isLoggedIn()) {
