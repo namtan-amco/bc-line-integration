@@ -104,7 +104,7 @@ async function loadData(docNo, customerName, amount, docDate) {
 
 // Function to handle Approve/Reject button clicks
 async function handleAction(actionType) {
-    const commentValue = document.getElementById('approve-comment').value;
+    // const commentValue = document.getElementById('approve-comment').value;
 
     // Show a confirmation dialog before proceeding with the action
     const confirmText = actionType === 'APPROVE' ? 'ยืนยันการ "อนุมัติ" ใช่หรือไม่?' : 'ยืนยันการ "ปฏิเสธ" ใช่หรือไม่?';
@@ -122,8 +122,7 @@ async function handleAction(actionType) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 systemId: currentApprovalEntrySystemId,
-                action: actionType,
-                comment: commentValue
+                action: actionType
             })
         });
 
