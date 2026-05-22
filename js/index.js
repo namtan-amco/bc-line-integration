@@ -114,6 +114,7 @@ async function handleAction(actionType) {
     document.getElementById('btn-approve').disabled = true;
     document.getElementById('btn-reject').disabled = true;
     document.getElementById('btn-approve').innerText = "กำลังบันทึก...";
+    document.getElementById('btn-reject').innerText = "กำลังบันทึก...";
 
     try {
         // Submit the approval decision to Power Automate
@@ -130,10 +131,12 @@ async function handleAction(actionType) {
             alert(`ดำเนินการเสร็จสิ้น: ระบบทำการ ${actionType === 'APPROVE' ? 'อนุมัติ' : 'ปฏิเสธ'} เรียบร้อยแล้ว`);
             liff.closeWindow(); // Close the Line mini app after successful submission
         } else {
+            
             alert(`เกิดข้อผิดพลาด (Status: ${response.status} - ${response.statusText}) ไม่สามารถบันทึกสถานะได้`);
             document.getElementById('btn-approve').disabled = false;
             document.getElementById('btn-reject').disabled = false;
             document.getElementById('btn-approve').innerText = "อนุมัติ (Approve)";
+            document.getElementById('btn-reject').innerText = "ปฏิเสธ (Reject)";
         }
 
     } catch (error) {
@@ -142,6 +145,7 @@ async function handleAction(actionType) {
         document.getElementById('btn-approve').disabled = false;
         document.getElementById('btn-reject').disabled = false;
         document.getElementById('btn-approve').innerText = "อนุมัติ (Approve)";
+        document.getElementById('btn-reject').innerText = "ปฏิเสธ (Reject)";
     }
 }
 
