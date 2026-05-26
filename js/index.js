@@ -104,7 +104,17 @@ async function loadData(docNo, customerName, amount, docDate) {
 
 // Function to handle Approve/Reject button clicks
 async function handleAction(actionType) {
-    // const commentValue = document.getElementById('approve-comment').value;
+    const commentValue = document.getElementById('approve-comment').value;
+
+    let userIdText = "Unknown";
+    try {
+        if (liff.isLoggedIn()) {
+            const profile = await liff.getProfile();
+            userIdText = profile.userId;
+        }
+    } catch (profileErr) {
+        console.error('Error getting profile in handleAction:', profileErr);
+    }
 
     // Show a confirmation dialog before proceeding with the action
     const confirmText = actionType === 'APPROVE' ? 'ยืนยันการ "อนุมัติ" ใช่หรือไม่?' : 'ยืนยันการ "ปฏิเสธ" ใช่หรือไม่?';
@@ -124,8 +134,8 @@ async function handleAction(actionType) {
             body: JSON.stringify({
                 systemId: currentApprovalEntrySystemId,
                 action: actionType,
-                comment: document.getElementById('approve-comment').value || "",
-                approverLineUserId: liff.getProfile().then(profile => profile.userId).catch(() => "Unknown")
+                comment: commentValue || "",
+                approverLineUserId: userIdText
             })
         });
 
@@ -133,8 +143,8 @@ async function handleAction(actionType) {
             // After submitting the approval/rejection, we can check the response for the result of the action
             const resultData = await response.json();
 
-            if (resultData.action === 'APPROVE' || resultData.action === 'REJECT' || resultData.action === 'CANCELED') {
-                const statusText = resultData.action === 'APPROVE' ? 'อนุมัติแล้ว' : (resultData.action === 'REJECT' ? 'ปฏิเสธแล้ว' : 'ยกเลิกแล้ว');
+            if (resultData.action === 'APPROVED' || resultData.action === 'REJECTED' || resultData.action === 'CANCELED') {
+                const statusText = resultData.action === 'APPROVED' ? 'อนุมัติแล้ว' : (resultData.action === 'REJECTED' ? 'ปฏิเสธแล้ว' : 'ยกเลิกแล้ว');
                 alert(`เอกสารนี้ถูก ${statusText}`);
             } else {
                 alert(`ดำเนินการเสร็จสิ้น: ระบบทำการ ${actionType === 'APPROVE' ? 'อนุมัติ' : 'ปฏิเสธ'} เรียบร้อยแล้ว`);
