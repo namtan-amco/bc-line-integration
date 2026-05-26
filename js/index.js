@@ -123,7 +123,9 @@ async function handleAction(actionType) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 systemId: currentApprovalEntrySystemId,
-                action: actionType
+                action: actionType,
+                comment: document.getElementById('approve-comment').value || "",
+                approverLineUserId: liff.getProfile().then(profile => profile.userId).catch(() => "Unknown")
             })
         });
 
