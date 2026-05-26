@@ -130,15 +130,24 @@ async function handleAction(actionType) {
         });
 
         if (response.ok) {
-            alert(`ดำเนินการเสร็จสิ้น: ระบบทำการ ${actionType === 'APPROVE' ? 'อนุมัติ' : 'ปฏิเสธ'} เรียบร้อยแล้ว`);
-            liff.closeWindow(); // Close the Line mini app after successful submission
+            // After submitting the approval/rejection, we can check the response for the result of the action
+            const resultData = await response.json();
+
+            if (resultData.action === 'APPROVE' || resultData.action === 'REJECT' || resultData.action === 'CANCELED') {
+                const statusText = resultData.action === 'APPROVE' ? 'อนุมัติแล้ว' : (resultData.action === 'REJECT' ? 'ปฏิเสธแล้ว' : 'ยกเลิกแล้ว');
+                alert(`เอกสารนี้ถูก ${statusText}`);
+            } else {
+                alert(`ดำเนินการเสร็จสิ้น: ระบบทำการ ${actionType === 'APPROVE' ? 'อนุมัติ' : 'ปฏิเสธ'} เรียบร้อยแล้ว`);
+                liff.closeWindow(); // Close the Line mini app after successful submission
+            }
+           
         } else {
             
             alert(`เกิดข้อผิดพลาด (Status: ${response.status} - ${response.statusText}) ไม่สามารถบันทึกสถานะได้`);
             document.getElementById('btn-approve').disabled = false;
             document.getElementById('btn-reject').disabled = false;
-            document.getElementById('btn-approve').innerText = "อนุมัติ (Approve)";
-            document.getElementById('btn-reject').innerText = "ปฏิเสธ (Reject)";
+            document.getElementById('btn-approve').innerText = "Approve";
+            document.getElementById('btn-reject').innerText = "Reject";
         }
 
     } catch (error) {
@@ -146,8 +155,8 @@ async function handleAction(actionType) {
         alert("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาลองใหม่อีกครั้ง");
         document.getElementById('btn-approve').disabled = false;
         document.getElementById('btn-reject').disabled = false;
-        document.getElementById('btn-approve').innerText = "อนุมัติ (Approve)";
-        document.getElementById('btn-reject').innerText = "ปฏิเสธ (Reject)";
+        document.getElementById('btn-approve').innerText = "Approve";
+        document.getElementById('btn-reject').innerText = "Reject";
     }
 }
 
