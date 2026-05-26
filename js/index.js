@@ -54,19 +54,45 @@ async function loadData(docNo, customerName, amount, docDate) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 documentNo: docNo,
-                documentType: "Quote"
+                documentType: "Quote",
+                systemId: currentApprovalEntrySystemId
             })
         });
 
         if (!response.ok) throw new Error('Network response was not ok');
 
         // Send the actual sales lines data from Power Automate to the frontend and display it
-        const salesLines = await response.json(); 
+        const responseData = await response.json(); 
+        const approvalStatus = responseData.status ? String(responseData.status).toUpperCase() : "OPEN";
+        const salesLines = responseData.salesLines;
 
         document.getElementById('doc-no').innerText = docNo;
         document.getElementById('cust-name').innerText = customerName;
         document.getElementById('doc-date').innerText = docDate;
         document.getElementById('doc-amount').innerText = amount + " THB";
+
+        const actionContainer = document.getElementById('action-buttons-container');
+        const commentBox = document.getElementById('approve-comment');
+
+        if (approvalStatus !== "OPEN") {
+            var statusMessage = "เอกสารนี้ได้รับการประมวลผลแล้ว";
+            if (approvalStatus === 'APPROVED') statusMessage = "เอกสารนี้ถูกอนุมัติเรียบร้อยแล้ว";
+            if (approvalStatus === 'REJECTED') statusMessage = "เอกสารนี้ถูกปฏิเสธแล้ว";
+            if (approvalStatus === 'CANCELED') statusMessage = "เอกสารนี้ถูกยกเลิกแล้ว";
+
+            if (commentBox) commentBox.disabled = true;
+            document.getElementById('btn-approve').style.display = 'none';
+            document.getElementById('btn-reject').style.display = 'none';
+
+            const banner = document.getElementById('status-banner');
+            if (banner) {
+                banner.innerText = statusMessage;
+                banner.classList.remove('hidden');
+            } else {
+                // ถ้าไม่มี banner div ก็เอาไปใส่แทนที่คอนเทนเนอร์ปุ่ม
+                if (actionContainer) actionContainer.innerHTML = `<p class="text-center font-bold text-slate-700 py-4">${statusMessage}</p>`;
+            }
+        }
 
         const linesContainer = document.getElementById('sales-lines-list');
         linesContainer.innerHTML = "";
@@ -140,19 +166,9 @@ async function handleAction(actionType) {
         });
 
         if (response.ok) {
-            // After submitting the approval/rejection, we can check the response for the result of the action
-            const resultData = await response.json();
-
-            if (resultData.action === 'APPROVE' || resultData.action === 'REJECT' || resultData.action === 'CANCELED') {
-                const statusText = resultData.action === 'APPROVE' ? 'อนุมัติแล้ว' : (resultData.action === 'REJECT' ? 'ปฏิเสธแล้ว' : 'ยกเลิกแล้ว');
-                alert(`เอกสารนี้ถูก ${statusText}`);
-            } else {
-                alert(`ดำเนินการเสร็จสิ้น: ระบบทำการ ${actionType === 'APPROVE' ? 'อนุมัติ' : 'ปฏิเสธ'} เรียบร้อยแล้ว`);
-                liff.closeWindow(); // Close the Line mini app after successful submission
-            }
-           
+            alert(`ดำเนินการเสร็จสิ้น: ระบบทำการ ${actionType === 'APPROVE' ? 'อนุมัติ' : 'ปฏิเสธ'} เรียบร้อยแล้ว`);
+            liff.closeWindow(); // Close the Line mini app after successful submission
         } else {
-            
             alert(`เกิดข้อผิดพลาด (Status: ${response.status} - ${response.statusText}) ไม่สามารถบันทึกสถานะได้`);
             document.getElementById('btn-approve').disabled = false;
             document.getElementById('btn-reject').disabled = false;
