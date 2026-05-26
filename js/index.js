@@ -143,8 +143,8 @@ async function handleAction(actionType) {
             // After submitting the approval/rejection, we can check the response for the result of the action
             const resultData = await response.json();
 
-            if (resultData.action === 'APPROVED' || resultData.action === 'REJECTED' || resultData.action === 'CANCELED') {
-                const statusText = resultData.action === 'APPROVED' ? 'อนุมัติแล้ว' : (resultData.action === 'REJECTED' ? 'ปฏิเสธแล้ว' : 'ยกเลิกแล้ว');
+            if (resultData.action === 'APPROVE' || resultData.action === 'REJECT' || resultData.action === 'CANCELED') {
+                const statusText = resultData.action === 'APPROVE' ? 'อนุมัติแล้ว' : (resultData.action === 'REJECT' ? 'ปฏิเสธแล้ว' : 'ยกเลิกแล้ว');
                 alert(`เอกสารนี้ถูก ${statusText}`);
             } else {
                 alert(`ดำเนินการเสร็จสิ้น: ระบบทำการ ${actionType === 'APPROVE' ? 'อนุมัติ' : 'ปฏิเสธ'} เรียบร้อยแล้ว`);
