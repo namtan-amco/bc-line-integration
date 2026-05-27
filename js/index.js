@@ -13,31 +13,29 @@ async function main() {
     try {
         await liff.init({ liffId: myLiffId });
 
-        // Check if the user is logged in, if not, trigger the login process
         if (!liff.isLoggedIn()) {
             liff.login();
             return;
         }
 
-        // Get user profile information
         const profile = await liff.getProfile();
         document.getElementById('user-name').innerText = profile.displayName;
         document.getElementById('user-picture').src = profile.pictureUrl;
 
-        // Get query parameters from the URL (passed from the LINE chat link)
+        // รับค่า Generic Parameter จาก URL
         const urlParams = new URLSearchParams(window.location.search);
-        currentDocumentNo = urlParams.get('documentNo');
-        currentCustomerName = urlParams.get('customerName') || "ไม่พบชื่อลูกค้า";
+        currentDocumentNo = urlParams.get('documentNo') || "-";
+        currentRecordDetails = urlParams.get('recordDetails') || "ไม่มีรายละเอียด";
         currentApprovalEntrySystemId = urlParams.get('systemId');
         currentAmount = urlParams.get('amount') || "0.00";
-        currentDocDate = urlParams.get('docDate') || "-";
+        currentTableId = urlParams.get('tableId');
 
-        if (!currentDocumentNo || !currentApprovalEntrySystemId) {
-            document.getElementById('loading-status').innerHTML = "❌ ไม่พบข้อมูลเอกสาร <br><span class='text-xs text-red-400'>กรุณาเปิดลิงก์นี้จากห้องแชทแจ้งเตือนของ LINE</span>";
+        if (!currentApprovalEntrySystemId) {
+            document.getElementById('loading-status').innerHTML = "❌ ไม่พบข้อมูลอ้างอิงของเอกสาร <br><span class='text-xs text-red-400'>กรุณาเปิดลิงก์นี้จากห้องแชทแจ้งเตือนของ LINE</span>";
             return;
         }
-        // Call function to load data from Power Automate and display it on the page
-        await loadData(currentDocumentNo, currentCustomerName, currentAmount, currentDocDate);
+        
+        await loadData(currentDocumentNo, currentRecordDetails, currentAmount);
 
     } catch (err) {
         console.error('LIFF Init Error:', err);
@@ -45,30 +43,33 @@ async function main() {
     }
 }
 
-// Function to load data from Power Automate and display it on the page
-async function loadData(docNo, customerName, amount, docDate) {
-
+// Function loadData
+async function loadData(docNo, recordDetails, amount) {
     try {
         const response = await fetch(urlFetchSalesLines, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                documentNo: docNo,
-                documentType: "Quote",
-                systemId: currentApprovalEntrySystemId
+                systemId: currentApprovalEntrySystemId // ส่งแค่ systemId ไปก็พอแล้ว
             })
         });
 
         if (!response.ok) throw new Error('Network response was not ok');
 
-        // Send the actual sales lines data from Power Automate to the frontend and display it
         const responseData = await response.json(); 
         const approvalStatus = responseData.status ? String(responseData.status).toUpperCase() : "OPEN";
-        const salesLines = responseData.salesLines;
+        
+        // รับค่า lines แทน salesLines
+        // เนื่องจากฟังก์ชัน GetLines() คืนค่ากลับมาเป็น String เราจึงต้อง parse มันให้เป็น JSON Array
+        let workflowLines = [];
+        if (responseData.lines) {
+            try {
+                workflowLines = typeof responseData.lines === 'string' ? JSON.parse(responseData.lines) : responseData.lines;
+            } catch(e) { console.error('Parse lines error:', e); }
+        }
 
         document.getElementById('doc-no').innerText = docNo;
-        document.getElementById('cust-name').innerText = customerName;
-        document.getElementById('doc-date').innerText = docDate;
+        document.getElementById('record-details').innerText = recordDetails;
         document.getElementById('doc-amount').innerText = amount + " THB";
 
         const actionContainer = document.getElementById('action-buttons-container');
@@ -88,24 +89,23 @@ async function loadData(docNo, customerName, amount, docDate) {
             if (banner) {
                 banner.innerText = statusMessage;
                 banner.classList.remove('hidden');
-            } else {
-                // ถ้าไม่มี banner div ก็เอาไปใส่แทนที่คอนเทนเนอร์ปุ่ม
-                if (actionContainer) actionContainer.innerHTML = `<p class="text-center font-bold text-slate-700 py-4">${statusMessage}</p>`;
+            } else if (actionContainer) {
+                actionContainer.innerHTML = `<p class="text-center font-bold text-slate-700 py-4">${statusMessage}</p>`;
             }
         }
 
-        const linesContainer = document.getElementById('sales-lines-list');
+        const linesContainer = document.getElementById('lines-list');
         linesContainer.innerHTML = "";
 
-        if (salesLines && salesLines.length > 0) {
-            salesLines.forEach(line => {
-                const lineAmount = Number(line.LineAmount) || 0;
-
+        if (workflowLines && workflowLines.length > 0) {
+            workflowLines.forEach(line => {
+                const lineAmount = Number(line.lineAmount) || 0;
+                // ปรับ Property ชื่อให้ตรงกับ JSON กลางที่เราสร้างใน AL (พิมพ์เล็ก)
                 const lineHtml = `
                     <div class="p-4 flex justify-between items-start text-sm border-b border-slate-100">
                         <div class="space-y-1">
-                            <p class="font-bold text-slate-800">${line.Description || 'ไม่มีรายละเอียด'}</p>
-                            <p class="text-xs text-slate-400">รหัส: ${line.No || '-'} | จำนวน: ${line.Quantity || 0} ${line.UnitOfMeasure || ''} x ฿${(Number(line.UnitPrice) || 0).toLocaleString()}</p>
+                            <p class="font-bold text-slate-800">${line.description || 'ไม่มีรายละเอียด'}</p>
+                            <p class="text-xs text-slate-400">รหัส: ${line.no || '-'} | จำนวน: ${line.quantity || 0} x ฿${(Number(line.unitPrice) || 0).toLocaleString()}</p>
                         </div>
                         <div class="text-right font-semibold text-slate-700">
                             ฿${lineAmount.toLocaleString()}
@@ -115,16 +115,16 @@ async function loadData(docNo, customerName, amount, docDate) {
                 linesContainer.insertAdjacentHTML('beforeend', lineHtml);
             });
         } else {
-            linesContainer.innerHTML = "<p class='p-4 text-center text-sm text-slate-400'>ไม่พบรายการสินค้าในเอกสารใบนี้</p>";
+            // กรณีไม่มี Line (เช่น Item Journal) หรือไม่พบข้อมูล
+            linesContainer.innerHTML = "<p class='p-4 text-center text-sm text-slate-400'>ไม่มีรายละเอียดไอเทมในเอกสารนี้</p>";
         }
 
-        // Hide loading status and show main content
         document.getElementById('loading-status').classList.add('hidden');
         document.getElementById('main-content').classList.remove('hidden');
         
     } catch (error) {
-        console.error('Error fetching sales lines:', error);
-        document.getElementById('loading-status').innerText = "❌ ไม่สามารถดึงข้อมูลสินค้าจาก Business Central ได้";
+        console.error('Error fetching lines:', error);
+        document.getElementById('loading-status').innerText = "❌ ไม่สามารถดึงข้อมูลเอกสารจาก Business Central ได้";
     }
 }
 
