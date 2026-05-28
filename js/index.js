@@ -34,7 +34,7 @@ async function main() {
             document.getElementById('loading-status').innerHTML = "❌ ไม่พบข้อมูลอ้างอิงของเอกสาร <br><span class='text-xs text-red-400'>กรุณาเปิดลิงก์นี้จากห้องแชทแจ้งเตือนของ LINE</span>";
             return;
         }
-        
+
         await loadData(currentDocumentNo, currentRecordDetails, currentAmount);
 
     } catch (err) {
@@ -56,21 +56,32 @@ async function loadData(docNo, recordDetails, amount) {
 
         if (!response.ok) throw new Error('Network response was not ok');
 
-        const responseData = await response.json(); 
+        const responseData = await response.json();
         const approvalStatus = responseData.status ? String(responseData.status).toUpperCase() : "OPEN";
-        
+
         // รับค่า lines แทน salesLines
         // เนื่องจากฟังก์ชัน GetLines() คืนค่ากลับมาเป็น String เราจึงต้อง parse มันให้เป็น JSON Array
         let workflowLines = [];
         if (responseData.lines) {
             try {
                 workflowLines = typeof responseData.lines === 'string' ? JSON.parse(responseData.lines) : responseData.lines;
-            } catch(e) { console.error('Parse lines error:', e); }
+            } catch (e) { console.error('Parse lines error:', e); }
         }
 
         document.getElementById('doc-no').innerText = docNo;
-        document.getElementById('record-details').innerText = recordDetails;
-        document.getElementById('doc-amount').innerText = amount + " THB";
+
+        let processedDetails = recordDetails;
+        if (recordDetails.includes(':')) {
+            processedDetails = recordDetails.replace(':', ':<br><span class="text-sm font-normal text-slate-500">') + '</span>';
+        }
+        document.getElementById('record-details').innerHTML = processedDetails;
+        
+        
+        const formattedAmount = (Number(amount) || 0).toLocaleString('th-TH', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+        document.getElementById('doc-amount').innerText = formattedAmount + " THB";
 
         const actionContainer = document.getElementById('action-buttons-container');
         const commentBox = document.getElementById('approve-comment');
@@ -121,7 +132,7 @@ async function loadData(docNo, recordDetails, amount) {
 
         document.getElementById('loading-status').classList.add('hidden');
         document.getElementById('main-content').classList.remove('hidden');
-        
+
     } catch (error) {
         console.error('Error fetching lines:', error);
         document.getElementById('loading-status').innerText = "❌ ไม่สามารถดึงข้อมูลเอกสารจาก Business Central ได้";
