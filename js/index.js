@@ -72,7 +72,7 @@ async function loadData(docNo, recordDetails, amount) {
 
         let processedDetails = recordDetails;
         if (recordDetails.includes(':')) {
-            processedDetails = recordDetails.replace(':', ':<br><span class="text-sm font-normal text-slate-500">') + '</span>';
+            processedDetails = recordDetails.replace(':', ':<br><span class="text-md font-bold text-slate-800">') + '</span>';
         }
         document.getElementById('record-details').innerHTML = processedDetails;
         
