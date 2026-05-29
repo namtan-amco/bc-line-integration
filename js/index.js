@@ -180,7 +180,13 @@ async function handleAction(actionType) {
             alert(`ดำเนินการเสร็จสิ้น: ระบบทำการ ${actionType === 'APPROVE' ? 'อนุมัติ' : 'ปฏิเสธ'} เรียบร้อยแล้ว`);
             liff.closeWindow(); // Close the Line mini app after successful submission
         } else {
-            alert(`เกิดข้อผิดพลาด (Status: ${response.status} - ${response.statusText}) ไม่สามารถบันทึกสถานะได้`);
+            try {
+                const errorData = await response.json();
+                const errorMsg = errorData.error || errorData.message || 'ไม่สามารถบันทึกสถานะได้ (สิทธิ์ไม่ถูกต้อง หรือเกิดข้อผิดพลาดอื่น)';
+                alert(`เกิดข้อผิดพลาด: ${errorMsg}`);
+            } catch(e) {
+                alert(`เกิดข้อผิดพลาด (Status: ${response.status}) ไม่สามารถบันทึกสถานะได้`);
+            }
             document.getElementById('btn-approve').disabled = false;
             document.getElementById('btn-reject').disabled = false;
             document.getElementById('btn-approve').innerText = "Approve";
